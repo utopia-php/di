@@ -1,0 +1,36 @@
+{
+    "name": "utopia-php/di",
+    "description": "A simple and lite library for managing dependency injections",
+    "type": "library",
+    "keywords": [
+        "php",
+        "framework",
+        "http",
+        "upf"
+    ],
+    "license": "MIT",
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {
+            "Utopia\\": "src/",
+            "Tests\\E2E\\": "tests/e2e"
+        }
+    },
+    "scripts": {
+        "lint": "vendor/bin/pint --test",
+        "format": "vendor/bin/pint",
+        "check": "vendor/bin/phpstan analyse -c phpstan.neon",
+        "test": "vendor/bin/phpunit --configuration phpunit.xml",
+        "bench": "vendor/bin/phpbench run --report=benchmark"
+    },
+    "require": {
+        "php": ">=8.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5.25",
+        "laravel/pint": "^1.2",
+        "swoole/ide-helper": "4.8.3",
+        "phpstan/phpstan": "^1.10",
+        "phpbench/phpbench": "^1.2"
+    }
+}
