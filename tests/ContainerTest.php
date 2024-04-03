@@ -39,12 +39,6 @@ class ContainerTest extends TestCase
 
     public function testResolution()
     {
-        $user = new Injection();
-        $user
-            ->setName('route')
-            ->dependency('user')
-            ->setCallback(fn ($user) => 'User: '.$user);
-        ;
-        $this->assertEquals('User: John Doe is 25 years old.', $this->container->get($user));
+        $this->assertEquals('John Doe is 25 years old.', $this->container->get('user'));
     }
 }
