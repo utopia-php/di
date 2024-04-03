@@ -20,17 +20,19 @@ class Container
      * TBD
      *
      * @param  Dependency  $dependency
-     * @return void
+     * @return self
      *
      * @throws Exception
      */
-    public function set(Dependency $dependency): void
+    public function set(Dependency $dependency): self
     {
         if ($dependency->getName() === 'utopia') {
             throw new Exception("'utopia' is a reserved keyword.", 500);
         }
 
         $this->dependencies[$dependency->getName()] = $dependency;
+
+        return $this;
     }
 
     /**
