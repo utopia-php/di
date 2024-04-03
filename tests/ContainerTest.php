@@ -5,7 +5,6 @@ namespace Utopia\Http;
 use PHPUnit\Framework\TestCase;
 use Utopia\DI\Container;
 use Utopia\DI\Dependency;
-use Utopia\DI\Injection;
 
 class ContainerTest extends TestCase
 {
@@ -30,7 +29,7 @@ class ContainerTest extends TestCase
             ->setName('age')
             ->setCallback(fn () => 25);
         ;
-        
+
         $this->container
             ->set($user)
             ->set($age)

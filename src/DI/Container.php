@@ -64,13 +64,13 @@ class Container
                 $arguments[] = $this->instances[$dependency];
                 continue;
             }
-            
+
             if (!\array_key_exists($dependency, $this->dependencies)) {
                 throw new Exception('Failed to find dependency: "' . $dependency . '"');
             }
 
             $arguments[] = $this->get($dependency);
-    
+
         }
 
         $resolved = \call_user_func_array($injection->getCallback(), $arguments);

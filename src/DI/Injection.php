@@ -8,12 +8,12 @@ class Injection
 {
     protected array $dependencies = [];
     protected $callback;
-    
+
     /**
      * @var string
      */
     protected string $name;
-    
+
     /**
      * Set the value of name
      *
