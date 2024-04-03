@@ -8,7 +8,7 @@ class Dependency extends Injection
      * @var string
      */
     protected string $name;
-
+    
     /**
      * Set the value of name
      *
@@ -16,9 +16,10 @@ class Dependency extends Injection
      *
      * @return void
      */
-    public function setName(string $name): void
+    public function setName(string $name): self
     {
         $this->name = $name;
+        return $this;
     }
 
     /**

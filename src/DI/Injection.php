@@ -10,6 +10,19 @@ class Injection
     protected $callback;
 
     /**
+     * Set Callback
+     *
+     * @param  mixed  $callback
+     * @return self
+     */
+    public function setCallback(mixed $callback): self
+    {
+        $this->callback = $callback;
+
+        return $this;
+    }
+    
+    /**
      * Get the value of callback
      *
      * @return mixed
@@ -17,19 +30,6 @@ class Injection
     public function getCallback(): mixed
     {
         return $this->callback;
-    }
-
-    /**
-     * Set Callback
-     *
-     * @param  mixed  $callback
-     * @return self
-     */
-    public function callback(mixed $callback): self
-    {
-        $this->callback = $callback;
-
-        return $this;
     }
 
     /**
