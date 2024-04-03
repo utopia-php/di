@@ -8,6 +8,34 @@ class Injection
 {
     protected array $dependencies = [];
     protected $callback;
+    
+    /**
+     * @var string
+     */
+    protected string $name;
+    
+    /**
+     * Set the value of name
+     *
+     * @param  string  $name
+     *
+     * @return self
+     */
+    public function setName(string $name): self
+    {
+        $this->name = $name;
+        return $this;
+    }
+
+    /**
+     * Get the value of name
+     *
+     * @return string
+     */
+    public function getName(): string
+    {
+        return $this->name;
+    }
 
     /**
      * Set Callback
@@ -21,7 +49,7 @@ class Injection
 
         return $this;
     }
-    
+
     /**
      * Get the value of callback
      *

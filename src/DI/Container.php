@@ -14,7 +14,7 @@ class Container
     /**
      * @var array
      */
-    protected array $resources = [];
+    protected array $instances = [];
 
     /**
      * TBD
@@ -41,29 +41,33 @@ class Container
      * @param  array  $list
      * @return array
      */
-    public function get(Injection $injection): mixed
+    public function get(Injection $injection): mixed // Route
     {
+        if (\array_key_exists($injection->getName(), $this->instances)) {
+            return $this->instances[$injection->getName()];
+        }
+
         $arguments = [];
 
         foreach ($injection->getDependencies() as $dependency) {
-            if ($dependency->getName() === 'utopia') {
-                return $this;
+
+            if (\array_key_exists($dependency->getName(), $this->instances)) {
+                $arguments[] = $this->instances[$dependency->getName()];
+                continue;
             }
-    
-            if (!\array_key_exists($dependency->getName(), $this->resources)) {
-                if (!\array_key_exists($dependency->getName(), $this->dependencies)) {
-                    throw new Exception('Failed to find resource: "' . $dependency->getName() . '"');
-                }
-    
-                $this->resources[$dependency->getName()] = \call_user_func_array(
-                    $this->dependencies[$dependency->getName()]->getCallback(),
-                    $this->get($this->dependencies[$dependency->getName()]->getDependencies())
-                );
+            
+            if (!\array_key_exists($dependency->getName(), $this->dependencies)) {
+                throw new Exception('Failed to find dependency: "' . $dependency->getName() . '"');
             }
-    
+
             $arguments[] = $this->get($dependency->getName());
+    
         }
 
-        \call_user_func_array($injection->getCallback(), $arguments);
+        $resolved = \call_user_func_array($injection->getCallback(), $arguments);
+
+        $this->instances[$injection->getName()] = $resolved;
+
+        return $resolved;
     }
 }
