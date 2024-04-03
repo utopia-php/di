@@ -14,7 +14,7 @@ class Dependency extends Injection
      *
      * @param  string  $name
      *
-     * @return void
+     * @return self
      */
     public function setName(string $name): self
     {
