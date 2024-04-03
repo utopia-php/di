@@ -1,6 +1,6 @@
 {
-    "name": "utopia-php/http",
-    "description": "A simple, light and advanced PHP HTTP framework",
+    "name": "utopia-php/di",
+    "description": "A simple and lite library for managing dependency injections",
     "type": "library",
     "keywords": [
         "php",
