@@ -63,7 +63,7 @@ class Injection
     /**
      * Get the value of dependencies
      *
-     * @return array
+     * @return string[]
      */
     public function getDependencies(): array
     {

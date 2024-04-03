@@ -7,7 +7,7 @@ use Utopia\DI\Container;
 use Utopia\DI\Dependency;
 use Utopia\DI\Injection;
 
-class HookTest extends TestCase
+class ContainerTest extends TestCase
 {
     /**
      * @var Container
