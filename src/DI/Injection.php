@@ -4,11 +4,11 @@ namespace Utopia\DI;
 
 use Exception;
 
-class Injection
+abstract class Injection
 {
     protected array $dependencies = [];
     protected $callback;
-    
+
     /**
      * @var string
      */
@@ -63,7 +63,7 @@ class Injection
     /**
      * Get the value of dependencies
      *
-     * @return array
+     * @return string[]
      */
     public function getDependencies(): array
     {
@@ -73,7 +73,7 @@ class Injection
     /**
      * Depenedency
      *
-     * @param  string  $dependency
+     * @param  string  $name
      * @return self
      *
      * @throws Exception
