@@ -4,7 +4,7 @@ namespace Utopia\DI;
 
 use Exception;
 
-class Injection
+abstract class Injection
 {
     protected array $dependencies = [];
     protected $callback;

@@ -41,7 +41,7 @@ class Container
             throw new Exception('Failed to find dependency: "' . $name . '"');
         }
 
-        return $this->resolve($this->dependencies[$name]);
+        return $this->inject($this->dependencies[$name]);
     }
 
     /**
@@ -50,7 +50,7 @@ class Container
      * @param  array  $list
      * @return array
      */
-    public function resolve(Injection $injection): mixed // Route
+    public function inject(Injection $injection): mixed // Route
     {
         if (\array_key_exists($injection->getName(), $this->instances)) {
             return $this->instances[$injection->getName()];
