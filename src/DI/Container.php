@@ -45,10 +45,10 @@ class Container
     }
 
     /**
-     * TBD
+     * Resolve the dependencies of a given injection.
      *
-     * @param  array  $list
-     * @return array
+     * @param  Injection  $injection
+     * @return mixed
      */
     public function inject(Injection $injection): mixed // Route
     {

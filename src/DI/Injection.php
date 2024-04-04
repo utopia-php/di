@@ -73,7 +73,7 @@ abstract class Injection
     /**
      * Depenedency
      *
-     * @param  string  $dependency
+     * @param  string  $name
      * @return self
      *
      * @throws Exception
