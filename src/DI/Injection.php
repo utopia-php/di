@@ -12,8 +12,8 @@ class Injection
     /**
      * @var string
      */
-    protected string $name;
-    
+    protected string $name = '';
+
     /**
      * Set the value of name
      *
