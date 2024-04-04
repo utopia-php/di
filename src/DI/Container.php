@@ -35,13 +35,22 @@ class Container
         return $this;
     }
 
+    public function get(string $name): mixed
+    {
+        if (!\array_key_exists($name, $this->dependencies)) {
+            throw new Exception('Failed to find dependency: "' . $name . '"');
+        }
+
+        return $this->inject($this->dependencies[$name]);
+    }
+
     /**
-     * TBD
+     * Resolve the dependencies of a given injection.
      *
-     * @param  array  $list
-     * @return array
+     * @param  Injection  $injection
+     * @return mixed
      */
-    public function get(Injection $injection): mixed // Route
+    public function inject(Injection $injection): mixed // Route
     {
         if (\array_key_exists($injection->getName(), $this->instances)) {
             return $this->instances[$injection->getName()];
@@ -51,17 +60,17 @@ class Container
 
         foreach ($injection->getDependencies() as $dependency) {
 
-            if (\array_key_exists($dependency->getName(), $this->instances)) {
-                $arguments[] = $this->instances[$dependency->getName()];
+            if (\array_key_exists($dependency, $this->instances)) {
+                $arguments[] = $this->instances[$dependency];
                 continue;
             }
-            
-            if (!\array_key_exists($dependency->getName(), $this->dependencies)) {
-                throw new Exception('Failed to find dependency: "' . $dependency->getName() . '"');
+
+            if (!\array_key_exists($dependency, $this->dependencies)) {
+                throw new Exception('Failed to find dependency: "' . $dependency . '"');
             }
 
-            $arguments[] = $this->get($dependency->getName());
-    
+            $arguments[] = $this->get($dependency);
+
         }
 
         $resolved = \call_user_func_array($injection->getCallback(), $arguments);
