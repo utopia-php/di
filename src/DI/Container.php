@@ -37,7 +37,7 @@ class Container
     public function set(Dependency $dependency): self
     {
         if ($dependency->getName() === 'di') {
-            throw new Exception("'di' is a reserved keyword.", 500);
+            throw new Exception("'di' is a reserved keyword.");
         }
 
         $this->dependencies[$dependency->getName()] = $dependency;
