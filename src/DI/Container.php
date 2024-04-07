@@ -27,7 +27,7 @@ class Container
     }
 
     /**
-     * TBD
+     * Set a dependency.
      *
      * @param  Dependency  $dependency
      * @return self
@@ -45,6 +45,13 @@ class Container
         return $this;
     }
 
+    /**
+     * Get a dependency.
+     * 
+     * @param  string  $name
+     * 
+     * @return mixed
+     */
     public function get(string $name): mixed
     {
         if (!\array_key_exists($name, $this->dependencies)) {
@@ -52,6 +59,18 @@ class Container
         }
 
         return $this->inject($this->dependencies[$name]);
+    }
+
+    /**
+     * Check if a dependency exists.
+     * 
+     * @param  string  $name
+     * 
+     * @return bool
+     */
+    public function has(string $name): bool
+    {
+        return \array_key_exists($name, $this->dependencies);
     }
 
     /**
