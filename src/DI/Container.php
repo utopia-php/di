@@ -18,9 +18,12 @@ class Container
 
     public function __construct()
     {
-        $this->set(new Dependency('di', function () {
+        $di = new Dependency();
+        $di->setName('di');
+        $di->setCallback(function () {
             return $this;
-        }));
+        });
+        $this->set($di);
     }
 
     /**
