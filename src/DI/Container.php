@@ -77,11 +77,13 @@ class Container
      * Resolve the dependencies of a given injection.
      *
      * @param  Injection  $injection
+     * @param  bool  $fresh
+     * 
      * @return mixed
      */
-    public function inject(Injection $injection): mixed // Route
+    public function inject(Injection $injection, bool $fresh = false): mixed // Route
     {
-        if (\array_key_exists($injection->getName(), $this->instances)) {
+        if (\array_key_exists($injection->getName(), $this->instances) && !$fresh) {
             return $this->instances[$injection->getName()];
         }
 
