@@ -16,6 +16,13 @@ class Container
      */
     protected array $instances = [];
 
+    public function __construct()
+    {
+        $this->set(new Dependency('di', function () {
+            return $this;
+        }));
+    }
+
     /**
      * TBD
      *
@@ -26,7 +33,7 @@ class Container
      */
     public function set(Dependency $dependency): self
     {
-        if ($dependency->getName() === 'utopia') {
+        if ($dependency->getName() === 'di') {
             throw new Exception("'utopia' is a reserved keyword.", 500);
         }
 
