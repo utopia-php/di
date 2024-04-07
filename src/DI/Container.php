@@ -23,7 +23,7 @@ class Container
         $di->setCallback(function () {
             return $this;
         });
-        $this->set($di);
+        $this->dependencies[$di->getName()] = $di;
     }
 
     /**
