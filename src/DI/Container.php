@@ -4,6 +4,9 @@ namespace Utopia\DI;
 
 use Exception;
 
+/**
+ * @extends Injection
+ */
 class Container
 {
     /**
