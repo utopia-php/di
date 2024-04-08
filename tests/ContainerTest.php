@@ -20,7 +20,7 @@ class ContainerTest extends TestCase
         $user = new Dependency();
         $user
             ->setName('user')
-            ->dependency('age')
+            ->inject('age')
             ->setCallback(fn ($age) => 'John Doe is '.$age.' years old.');
         ;
 

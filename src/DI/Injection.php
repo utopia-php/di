@@ -78,7 +78,7 @@ abstract class Injection
      *
      * @throws Exception
      */
-    public function dependency(string $name): self
+    public function inject(string $name): self
     {
         if (array_key_exists($name, $this->dependencies)) {
             throw new Exception('Dependency already declared for '.$name);
