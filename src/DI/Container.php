@@ -29,12 +29,12 @@ class Container
     /**
      * Set a dependency.
      *
-     * @param  Dependency  $dependency
+     * @param  Dependency|Injection  $dependency
      * @return self
      *
      * @throws Exception
      */
-    public function set(Dependency $dependency): self
+    public function set(Dependency|Injection $dependency): self
     {
         if ($dependency->getName() === 'di') {
             throw new Exception("'di' is a reserved keyword.");
