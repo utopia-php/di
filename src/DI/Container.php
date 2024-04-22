@@ -40,6 +40,10 @@ class Container
             throw new Exception("'di' is a reserved keyword.");
         }
 
+        if (\array_key_exists($dependency->getName(), $this->instances)) {
+            unset($this->instances[$dependency->getName()]);
+        }
+
         $this->dependencies[$dependency->getName()] = $dependency;
 
         return $this;
