@@ -123,10 +123,6 @@ class Container
      */
     public function refresh(string $name): self
     {
-        if (!\array_key_exists($name, $this->dependencies)) {
-            throw new Exception('Failed to find dependency: "' . $name . '"');
-        }
-
         if(\array_key_exists($name, $this->instances)) {
             unset($this->instances[$name]);
         }
