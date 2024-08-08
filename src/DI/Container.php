@@ -51,9 +51,9 @@ class Container
 
     /**
      * Get a dependency.
-     * 
+     *
      * @param  string  $name
-     * 
+     *
      * @return mixed
      */
     public function get(string $name): mixed
@@ -67,9 +67,9 @@ class Container
 
     /**
      * Check if a dependency exists.
-     * 
+     *
      * @param  string  $name
-     * 
+     *
      * @return bool
      */
     public function has(string $name): bool
@@ -82,7 +82,7 @@ class Container
      *
      * @param  Injection  $injection
      * @param  bool  $fresh
-     * 
+     *
      * @return mixed
      */
     public function inject(Injection $injection, bool $fresh = false): mixed // Route
@@ -113,5 +113,20 @@ class Container
         $this->instances[$injection->getName()] = $resolved;
 
         return $resolved;
+    }
+    /**
+     * Refresh a dependency
+     *
+     * @param string $name
+     * @return self
+     * @throws Exception
+     */
+    public function refresh(string $name): self
+    {
+        if(\array_key_exists($name, $this->instances)) {
+            unset($this->instances[$name]);
+        }
+
+        return $this;
     }
 }
