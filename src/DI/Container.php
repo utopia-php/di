@@ -118,7 +118,7 @@ class Container
      * Refresh a dependency
      *
      * @param string $name
-     * @return mixed
+     * @return self
      * @throws Exception
      */
     public function refresh(string $name): self
