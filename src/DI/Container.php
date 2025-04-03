@@ -114,6 +114,7 @@ class Container
 
         return $resolved;
     }
+    
     /**
      * Refresh a dependency
      *
@@ -127,6 +128,17 @@ class Container
             unset($this->instances[$name]);
         }
 
+        return $this;
+    }
+
+    /**
+     * Clean all cached instances
+     *
+     * @return self
+     */
+    public function clean(): self
+    {
+        $this->instances = [];
         return $this;
     }
 }
