@@ -1,4 +1,6 @@
 parameters:
+    parallel:
+        maximumNumberOfProcesses: 0
     scanDirectories:
         - vendor/swoole/ide-helper
     level: 5
