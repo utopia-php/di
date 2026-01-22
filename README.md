@@ -2,8 +2,8 @@
     <img height="45" src="docs/logo.png" alt="Logo">
 </p>
 
-[![Build Status](https://travis-ci.org/utopia-php/http.svg?branch=master)](https://travis-ci.org/utopia-php/http)
-![Total Downloads](https://img.shields.io/packagist/dt/utopia-php/http.svg)
+[![Build Status](https://travis-ci.org/utopia-php/di.svg?branch=master)](https://travis-ci.org/utopia-php/di)
+![Total Downloads](https://img.shields.io/packagist/dt/utopia-php/di.svg)
 [![Discord](https://img.shields.io/discord/564160730845151244?label=discord)](https://discord.gg/GSeTUeA)
 
 Utopia DI library is simple and lite library for managing dependency injections. This library is aiming to be as simple and easy to learn and use. This library is maintained by the [Appwrite team](https://appwrite.io).
@@ -15,7 +15,7 @@ Although this library is part of the Utopia Framework project it is dependency f
 Install using Composer:
 
 ```bash
-composer require utopia-php/http
+composer require utopia-php/di
 ```
 
 
@@ -27,13 +27,29 @@ use Utopia\DI\Container;
 TBD
 ```
 
+## Hooks
+
+You can define hook-style callbacks with ordered params and injections to keep lifecycle handlers explicit and consistent.
+
+```php
+use Utopia\DI\Hook;
+
+$hook = (new Hook())
+    ->groups(['*'])
+    ->param('userId', validator: null, default: 'unknown', optional: true)
+    ->inject('workerId')
+    ->action(function (string $userId, string $workerId) {
+        // ...
+    });
+```
+
 ## System Requirements
 
-Utopia HTTP requires PHP 8.1 or later. We recommend using the latest PHP version whenever possible.
+Utopia DI requires PHP 8.2 or later. We recommend using the latest PHP version whenever possible.
 
 ## More from Utopia
 
-Our ecosystem supports other thin PHP projects aiming to extend the core PHP Utopia HTTP.
+Our ecosystem supports other thin PHP projects aiming to extend the core PHP Utopia DI.
 
 Each project is focused on solving a single, very simple problem and you can use composer to include any of them in your next project.
 
@@ -45,7 +61,7 @@ All code contributions - including those of people having commit access - must g
 
 Fork the project, create a feature branch, and send us a pull request.
 
-You can refer to the [Contributing Guide](https://github.com/utopia-php/http/blob/master/CONTRIBUTING.md) for more info.
+You can refer to the [Contributing Guide](https://github.com/utopia-php/di/blob/master/CONTRIBUTING.md) for more info.
 
 For security issues, please email security@appwrite.io instead of posting a public issue in GitHub.
 
