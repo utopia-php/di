@@ -25,8 +25,16 @@ use Utopia\DI\Container;
 
 $di = new Container();
 
-$di->setResource('config', fn () => ['region' => 'eu-west-1']);
-$di->setResource('db', fn (array $config) => new PDO('dsn', 'username', 'password'), ['config']);
+$di->setResource('config', fn () => [
+    'dsn' => 'mysql:host=localhost;dbname=app',
+    'username' => 'root',
+    'password' => 'secret',
+]);
+$di->setResource(
+    'db',
+    fn (array $config) => new PDO($config['dsn'], $config['username'], $config['password']),
+    ['config']
+);
 
 $db = $di->getResource('db', 'request-1');
 ```
