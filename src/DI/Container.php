@@ -36,7 +36,12 @@ class Container
         $this->dependencies[$context] ??= [];
         $this->instances[$context] ??= [];
 
-        unset($this->instances[$context][$dependency->getName()]);
+        if ($context === self::DEFAULT_CONTEXT) {
+            $this->refresh($dependency->getName());
+        } else {
+            unset($this->instances[$context][$dependency->getName()]);
+        }
+
         $this->dependencies[$context][$dependency->getName()] = $dependency;
 
         return $this;

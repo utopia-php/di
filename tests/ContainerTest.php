@@ -117,4 +117,17 @@ class ContainerTest extends TestCase
         $this->assertFalse($this->container->has('request-id', 'request-1'));
         $this->assertSame(3, $this->container->getResource('counter', 'request-1'));
     }
+
+    public function testUpdatingDefaultContextInvalidatesCachedInstancesAcrossContexts(): void
+    {
+        $this->container->setResource('config', fn () => 'v1');
+
+        $this->assertSame('v1', $this->container->getResource('config', 'request-1'));
+        $this->assertSame('v1', $this->container->getResource('config', 'request-2'));
+
+        $this->container->setResource('config', fn () => 'v2');
+
+        $this->assertSame('v2', $this->container->getResource('config', 'request-1'));
+        $this->assertSame('v2', $this->container->getResource('config', 'request-2'));
+    }
 }
