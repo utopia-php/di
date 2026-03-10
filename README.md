@@ -6,7 +6,7 @@
 ![Total Downloads](https://img.shields.io/packagist/dt/utopia-php/http.svg)
 [![Discord](https://img.shields.io/discord/564160730845151244?label=discord)](https://discord.gg/GSeTUeA)
 
-Utopia DI library is simple and lite library for managing dependency injections. This library is aiming to be as simple and easy to learn and use. This library is maintained by the [Appwrite team](https://appwrite.io).
+Utopia DI is a small dependency injection container with scoped resources. It is designed to stay simple while still covering the resource lifecycle used across the Utopia libraries. This library is maintained by the [Appwrite team](https://appwrite.io).
 
 Although this library is part of the Utopia Framework project it is dependency free, and can be used as standalone with any other PHP project or framework.
 
@@ -15,25 +15,39 @@ Although this library is part of the Utopia Framework project it is dependency f
 Install using Composer:
 
 ```bash
-composer require utopia-php/http
+composer require utopia-php/di
 ```
-
 
 ```php
 require_once __DIR__.'/../vendor/autoload.php';
 
 use Utopia\DI\Container;
 
-TBD
+$di = new Container();
+
+$di->setResource('config', fn () => ['region' => 'eu-west-1']);
+$di->setResource('db', fn (array $config) => new PDO(...), ['config']);
+
+$db = $di->getResource('db', 'request-1');
+```
+
+Resources are cached per context. Definitions registered in the default `utopia` context are automatically available in other contexts, while context-specific definitions override the default for that request.
+
+```php
+$di->setResource('request-id', fn () => 'req-1', context: 'request-1');
+
+$requestResources = $di->getResources(['db', 'request-id'], 'request-1');
+
+$di->purge('request-1');
 ```
 
 ## System Requirements
 
-Utopia HTTP requires PHP 8.1 or later. We recommend using the latest PHP version whenever possible.
+Utopia DI requires PHP 8.2 or later. We recommend using the latest PHP version whenever possible.
 
 ## More from Utopia
 
-Our ecosystem supports other thin PHP projects aiming to extend the core PHP Utopia HTTP.
+Our ecosystem supports other thin PHP projects aiming to extend the core PHP Utopia libraries.
 
 Each project is focused on solving a single, very simple problem and you can use composer to include any of them in your next project.
 
@@ -45,7 +59,7 @@ All code contributions - including those of people having commit access - must g
 
 Fork the project, create a feature branch, and send us a pull request.
 
-You can refer to the [Contributing Guide](https://github.com/utopia-php/http/blob/master/CONTRIBUTING.md) for more info.
+You can refer to the [Contributing Guide](https://github.com/utopia-php/di/blob/master/CONTRIBUTING.md) for more info.
 
 For security issues, please email security@appwrite.io instead of posting a public issue in GitHub.
 

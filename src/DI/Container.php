@@ -6,127 +6,230 @@ use Exception;
 
 class Container
 {
+    public const DEFAULT_CONTEXT = 'utopia';
+
     /**
-     * @var array
+     * @var array<string, array<string, Injection>>
      */
     protected array $dependencies = [];
 
     /**
-     * @var array
+     * @var array<string, array<string, mixed>>
      */
     protected array $instances = [];
-
-    public function __construct()
-    {
-        $di = new Dependency();
-        $di->setName('di');
-        $di->setCallback(function () {
-            return $this;
-        });
-        $this->dependencies[$di->getName()] = $di;
-    }
 
     /**
      * Set a dependency.
      *
      * @param  Dependency|Injection  $dependency
+     * @param  string  $context
      * @return self
      *
      * @throws Exception
      */
-    public function set(Dependency|Injection $dependency): self
+    public function set(Dependency|Injection $dependency, string $context = self::DEFAULT_CONTEXT): self
     {
         if ($dependency->getName() === 'di') {
             throw new Exception("'di' is a reserved keyword.");
         }
 
-        if (\array_key_exists($dependency->getName(), $this->instances)) {
-            unset($this->instances[$dependency->getName()]);
-        }
+        $this->dependencies[$context] ??= [];
+        $this->instances[$context] ??= [];
 
-        $this->dependencies[$dependency->getName()] = $dependency;
+        unset($this->instances[$context][$dependency->getName()]);
+        $this->dependencies[$context][$dependency->getName()] = $dependency;
 
         return $this;
+    }
+
+    /**
+     * Register a callable resource.
+     *
+     * @param  string  $name
+     * @param  callable  $callback
+     * @param  string[]  $dependencies
+     * @param  string  $context
+     * @return self
+     */
+    public function setResource(string $name, callable $callback, array $dependencies = [], string $context = self::DEFAULT_CONTEXT): self
+    {
+        $resource = new Resource();
+        $resource
+            ->setName($name)
+            ->setCallback($callback)
+        ;
+
+        foreach ($dependencies as $dependency) {
+            $resource->inject($dependency);
+        }
+
+        return $this->set($resource, $context);
     }
 
     /**
      * Get a dependency.
      *
      * @param  string  $name
-     *
+     * @param  string  $context
+     * @param  bool  $fresh
      * @return mixed
+     *
+     * @throws Exception
      */
-    public function get(string $name): mixed
+    public function get(string $name, string $context = self::DEFAULT_CONTEXT, bool $fresh = false): mixed
     {
-        if (!\array_key_exists($name, $this->dependencies)) {
-            throw new Exception('Failed to find dependency: "' . $name . '"');
+        if ($name === 'di') {
+            return $this;
         }
 
-        return $this->inject($this->dependencies[$name]);
+        $injection = $this->getDefinition($name, $context);
+
+        return $this->inject($injection, $context, $fresh);
     }
 
     /**
-     * Check if a dependency exists.
+     * Alias for get().
      *
      * @param  string  $name
+     * @param  string  $context
+     * @param  bool  $fresh
+     * @return mixed
      *
+     * @throws Exception
+     */
+    public function getResource(string $name, string $context = self::DEFAULT_CONTEXT, bool $fresh = false): mixed
+    {
+        return $this->get($name, $context, $fresh);
+    }
+
+    /**
+     * Resolve multiple dependencies for a context.
+     *
+     * @param  string[]  $names
+     * @param  string  $context
+     * @return array<string, mixed>
+     *
+     * @throws Exception
+     */
+    public function getResources(array $names, string $context = self::DEFAULT_CONTEXT): array
+    {
+        $resources = [];
+
+        foreach ($names as $name) {
+            $resources[$name] = $this->get($name, $context);
+        }
+
+        return $resources;
+    }
+
+    /**
+     * Check if a dependency exists in the current or default context.
+     *
+     * @param  string  $name
+     * @param  string  $context
      * @return bool
      */
-    public function has(string $name): bool
+    public function has(string $name, string $context = self::DEFAULT_CONTEXT): bool
     {
-        return \array_key_exists($name, $this->dependencies);
+        if ($name === 'di') {
+            return true;
+        }
+
+        return isset($this->dependencies[$context][$name]) || isset($this->dependencies[self::DEFAULT_CONTEXT][$name]);
     }
 
     /**
      * Resolve the dependencies of a given injection.
      *
      * @param  Injection  $injection
+     * @param  string  $context
      * @param  bool  $fresh
-     *
      * @return mixed
+     *
+     * @throws Exception
      */
-    public function inject(Injection $injection, bool $fresh = false): mixed // Route
+    public function inject(Injection $injection, string $context = self::DEFAULT_CONTEXT, bool $fresh = false): mixed
     {
-        if (\array_key_exists($injection->getName(), $this->instances) && !$fresh) {
-            return $this->instances[$injection->getName()];
+        $this->instances[$context] ??= [];
+
+        if (\array_key_exists($injection->getName(), $this->instances[$context]) && !$fresh) {
+            return $this->instances[$context][$injection->getName()];
         }
 
         $arguments = [];
 
         foreach ($injection->getDependencies() as $dependency) {
-
-            if (\array_key_exists($dependency, $this->instances)) {
-                $arguments[] = $this->instances[$dependency];
-                continue;
-            }
-
-            if (!\array_key_exists($dependency, $this->dependencies)) {
-                throw new Exception('Failed to find dependency: "' . $dependency . '"');
-            }
-
-            $arguments[] = $this->get($dependency);
-
+            $arguments[] = $this->get($dependency, $context);
         }
 
         $resolved = \call_user_func_array($injection->getCallback(), $arguments);
-
-        $this->instances[$injection->getName()] = $resolved;
+        $this->instances[$context][$injection->getName()] = $resolved;
 
         return $resolved;
     }
+
     /**
-     * Refresh a dependency
+     * Refresh a dependency instance.
      *
-     * @param string $name
+     * @param  string  $name
+     * @param  string|null  $context
      * @return self
-     * @throws Exception
      */
-    public function refresh(string $name): self
+    public function refresh(string $name, ?string $context = null): self
     {
-        if(\array_key_exists($name, $this->instances)) {
-            unset($this->instances[$name]);
+        if ($name === 'di') {
+            return $this;
+        }
+
+        if ($context !== null) {
+            unset($this->instances[$context][$name]);
+
+            return $this;
+        }
+
+        foreach (\array_keys($this->instances) as $instanceContext) {
+            unset($this->instances[$instanceContext][$name]);
         }
 
         return $this;
+    }
+
+    /**
+     * Remove context-specific registrations and cached instances.
+     *
+     * @param  string  $context
+     * @return self
+     */
+    public function purge(string $context): self
+    {
+        if ($context === self::DEFAULT_CONTEXT) {
+            $this->instances[$context] = [];
+
+            return $this;
+        }
+
+        unset($this->dependencies[$context], $this->instances[$context]);
+
+        return $this;
+    }
+
+    /**
+     * @param  string  $name
+     * @param  string  $context
+     * @return Injection
+     *
+     * @throws Exception
+     */
+    protected function getDefinition(string $name, string $context): Injection
+    {
+        if (isset($this->dependencies[$context][$name])) {
+            return $this->dependencies[$context][$name];
+        }
+
+        if (isset($this->dependencies[self::DEFAULT_CONTEXT][$name])) {
+            return $this->dependencies[self::DEFAULT_CONTEXT][$name];
+        }
+
+        throw new Exception('Failed to find dependency: "' . $name . '"');
     }
 }
