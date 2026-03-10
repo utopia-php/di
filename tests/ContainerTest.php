@@ -4,7 +4,7 @@ namespace Utopia\DI\Tests;
 
 use PHPUnit\Framework\TestCase;
 use Utopia\DI\Container;
-use Utopia\DI\Dependency;
+use Utopia\DI\Resource;
 
 class ContainerTest extends TestCase
 {
@@ -14,14 +14,14 @@ class ContainerTest extends TestCase
     {
         $this->container = new Container();
 
-        $user = new Dependency();
+        $user = new Resource();
         $user
             ->setName('user')
             ->inject('age')
             ->setCallback(fn (int $age) => 'John Doe is '.$age.' years old.')
         ;
 
-        $age = new Dependency();
+        $age = new Resource();
         $age
             ->setName('age')
             ->setCallback(fn () => 25)

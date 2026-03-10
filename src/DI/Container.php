@@ -9,7 +9,7 @@ class Container
     public const DEFAULT_CONTEXT = 'utopia';
 
     /**
-     * @var array<string, array<string, Injection>>
+     * @var array<string, array<string, Resource>>
      */
     protected array $dependencies = [];
 
@@ -21,13 +21,13 @@ class Container
     /**
      * Set a dependency.
      *
-     * @param  Dependency|Injection  $dependency
+     * @param  Resource  $dependency
      * @param  string  $context
      * @return self
      *
      * @throws Exception
      */
-    public function set(Dependency|Injection $dependency, string $context = self::DEFAULT_CONTEXT): self
+    public function set(Resource $dependency, string $context = self::DEFAULT_CONTEXT): self
     {
         if ($dependency->getName() === 'di') {
             throw new Exception("'di' is a reserved keyword.");
@@ -67,7 +67,7 @@ class Container
     }
 
     /**
-     * Get a dependency.
+     * Get a resource.
      *
      * @param  string  $name
      * @param  string  $context
@@ -123,7 +123,7 @@ class Container
     }
 
     /**
-     * Check if a dependency exists in the current or default context.
+     * Check if a resource exists in the current or default context.
      *
      * @param  string  $name
      * @param  string  $context
@@ -139,16 +139,16 @@ class Container
     }
 
     /**
-     * Resolve the dependencies of a given injection.
+     * Resolve the dependencies of a given resource.
      *
-     * @param  Injection  $injection
+     * @param  Resource  $injection
      * @param  string  $context
      * @param  bool  $fresh
      * @return mixed
      *
      * @throws Exception
      */
-    public function inject(Injection $injection, string $context = self::DEFAULT_CONTEXT, bool $fresh = false): mixed
+    public function inject(Resource $injection, string $context = self::DEFAULT_CONTEXT, bool $fresh = false): mixed
     {
         $this->instances[$context] ??= [];
 
@@ -216,11 +216,11 @@ class Container
     /**
      * @param  string  $name
      * @param  string  $context
-     * @return Injection
+     * @return Resource
      *
      * @throws Exception
      */
-    protected function getDefinition(string $name, string $context): Injection
+    protected function getDefinition(string $name, string $context): Resource
     {
         if (isset($this->dependencies[$context][$name])) {
             return $this->dependencies[$context][$name];
