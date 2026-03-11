@@ -105,6 +105,20 @@ class ContainerTest extends TestCase
         $this->assertSame('utopia-same', $resources['summary']);
     }
 
+    public function testGetResourcesCanBypassCacheWithFreshFlag(): void
+    {
+        $counter = 0;
+
+        $this->container->setResource('counter', function () use (&$counter) {
+            $counter++;
+
+            return $counter;
+        });
+
+        $this->assertSame(['counter' => 1], $this->container->getResources(['counter']));
+        $this->assertSame(['counter' => 2], $this->container->getResources(['counter'], fresh: true));
+    }
+
     public function testCanRefreshAndPurgeContexts(): void
     {
         $counter = 0;

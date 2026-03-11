@@ -112,16 +112,17 @@ class Container
      *
      * @param  string[]  $names
      * @param  string  $context
+     * @param  bool  $fresh
      * @return array<string, mixed>
      *
      * @throws Exception
      */
-    public function getResources(array $names, string $context = self::DEFAULT_CONTEXT): array
+    public function getResources(array $names, string $context = self::DEFAULT_CONTEXT, bool $fresh = false): array
     {
         $resources = [];
 
         foreach ($names as $name) {
-            $resources[$name] = $this->get($name, $context);
+            $resources[$name] = $this->get($name, $context, $fresh);
         }
 
         return $resources;
@@ -200,7 +201,13 @@ class Container
     }
 
     /**
-     * Remove context-specific registrations and cached instances.
+     * Purge resources for a context.
+     *
+     * Container::purge clears cached instances from $this->instances. For
+     * self::DEFAULT_CONTEXT it preserves registrations in $this->dependencies
+     * and only resets $this->instances[self::DEFAULT_CONTEXT]. For any other
+     * context it removes both $this->dependencies[$context] and
+     * $this->instances[$context].
      *
      * @param  string  $context
      * @return self
