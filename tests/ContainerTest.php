@@ -64,6 +64,19 @@ class ContainerTest extends TestCase
         $this->assertSame('counter-2', $this->container->getResource('message', 'request-2'));
     }
 
+    public function testDependencyArrayOrderDoesNotNeedToMatchCallbackParameterOrder(): void
+    {
+        $container = new Container();
+
+        $container
+            ->setResource('a', fn () => 'value-a')
+            ->setResource('b', fn () => 'value-b')
+            ->setResource('combined', fn (string $b, string $a): string => "{$a}:{$b}", ['a', 'b'])
+        ;
+
+        $this->assertSame('value-a:value-b', $container->get('combined'));
+    }
+
     public function testContextSpecificDefinitionsOverrideDefaultContext(): void
     {
         $this->container

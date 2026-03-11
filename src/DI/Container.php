@@ -164,10 +164,10 @@ class Container
         $arguments = [];
 
         foreach ($injection->getDependencies() as $dependency) {
-            $arguments[] = $this->get($dependency, $context);
+            $arguments[$dependency] = $this->get($dependency, $context);
         }
 
-        $resolved = \call_user_func_array($injection->getCallback(), $arguments);
+        $resolved = ($injection->getCallback())(...$arguments);
         $this->instances[$context][$injection->getName()] = $resolved;
 
         return $resolved;
