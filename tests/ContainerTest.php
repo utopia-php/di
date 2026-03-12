@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Utopia\DI\Tests;
 
 use PHPUnit\Framework\TestCase;
@@ -10,7 +12,7 @@ use Utopia\DI\Dependency;
 use Utopia\DI\Exceptions\ContainerException;
 use Utopia\DI\Exceptions\NotFoundException;
 
-class ContainerTest extends TestCase
+final class ContainerTest extends TestCase
 {
     protected ?Container $container = null;
 
@@ -19,10 +21,10 @@ class ContainerTest extends TestCase
         $this->container = new Container();
 
         $this->container
-            ->set('age', fn (ContainerInterface $container) => 25)
+            ->set('age', fn (ContainerInterface $container): int => 25)
             ->set(
                 'user',
-                fn (ContainerInterface $container) => 'John Doe is '.$container->get('age').' years old.'
+                fn (ContainerInterface $container): string => 'John Doe is '.$container->get('age').' years old.'
             )
         ;
     }
@@ -51,14 +53,14 @@ class ContainerTest extends TestCase
                 key: 'age',
                 factory: new Dependency(
                     injections: [],
-                    callback: fn () => 25
+                    callback: fn (): int => 25
                 )
             )
             ->set(
                 key: 'john',
                 factory: new Dependency(
                     injections: ['age'],
-                    callback: fn (int $age) => 'John Doe is '.$age.' years old.'
+                    callback: fn (int $age): string => 'John Doe is '.$age.' years old.'
                 )
             )
         ;
@@ -70,7 +72,7 @@ class ContainerTest extends TestCase
     {
         $counter = 0;
 
-        $this->container->set('counter', function (ContainerInterface $container) use (&$counter) {
+        $this->container->set('counter', function (ContainerInterface $container) use (&$counter): int {
             $counter++;
 
             return $counter;
@@ -93,10 +95,10 @@ class ContainerTest extends TestCase
         $request = $this->container->scope();
 
         $request
-            ->set('age', fn (ContainerInterface $container) => 30)
+            ->set('age', fn (ContainerInterface $container): int => 30)
             ->set(
                 'user',
-                fn (ContainerInterface $container) => 'John Doe is '.$container->get('age').' years old.'
+                fn (ContainerInterface $container): string => 'John Doe is '.$container->get('age').' years old.'
             )
         ;
 
@@ -108,7 +110,7 @@ class ContainerTest extends TestCase
     {
         $counter = 0;
 
-        $this->container->set('counter', function (ContainerInterface $container) use (&$counter) {
+        $this->container->set('counter', function (ContainerInterface $container) use (&$counter): int {
             $counter++;
 
             return $counter;
@@ -119,7 +121,7 @@ class ContainerTest extends TestCase
         $this->assertSame(1, $this->container->get('counter'));
         $this->assertSame(1, $request->get('counter'));
 
-        $request->set('counter', function (ContainerInterface $container) use (&$counter) {
+        $request->set('counter', function (ContainerInterface $container) use (&$counter): int {
             $counter++;
 
             return $counter;
@@ -133,7 +135,7 @@ class ContainerTest extends TestCase
     {
         $counter = 0;
 
-        $this->container->set('nullable', function (ContainerInterface $container) use (&$counter) {
+        $this->container->set('nullable', function (ContainerInterface $container) use (&$counter): null {
             $counter++;
 
             return null;
@@ -154,7 +156,7 @@ class ContainerTest extends TestCase
 
     public function testFactoryFailuresThrowContainerException(): void
     {
-        $this->container->set('broken', function (ContainerInterface $container) {
+        $this->container->set('broken', function (ContainerInterface $container): void {
             throw new RuntimeException('boom');
         });
 

@@ -11,16 +11,13 @@ class Dependency
      * @param  callable  $callback
      */
     public function __construct(
-        private array $injections,
+        private readonly array $injections,
         private $callback,
     ) {
     }
 
     /**
      * Resolve the configured injections from the container and invoke the callback.
-     *
-     * @param  ContainerInterface  $container
-     * @return mixed
      */
     public function __invoke(ContainerInterface $container): mixed
     {

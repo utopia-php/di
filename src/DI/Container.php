@@ -28,16 +28,14 @@ class Container implements ContainerInterface
     private array $resolving = [];
 
     public function __construct(
-        private ?ContainerInterface $parent = null,
+        private readonly ?ContainerInterface $parent = null,
     ) {
     }
 
     /**
      * Register a dependency factory on the current container.
      *
-     * @param  string  $key
      * @param  callable(ContainerInterface): mixed  $factory
-     * @return static
      */
     public function set(string $key, callable $factory): static
     {
@@ -50,8 +48,6 @@ class Container implements ContainerInterface
     /**
      * Resolve an entry from the current container or its parent chain.
      *
-     * @param  string  $id
-     * @return mixed
      *
      * @throws ContainerExceptionInterface
      */
@@ -70,9 +66,7 @@ class Container implements ContainerInterface
 
             try {
                 $resolved = ($this->definitions[$id])($this);
-            } catch (NotFoundException $exception) {
-                throw $exception;
-            } catch (ContainerExceptionInterface $exception) {
+            } catch (NotFoundException|ContainerExceptionInterface $exception) {
                 throw $exception;
             } catch (\Throwable $exception) {
                 throw new ContainerException(
@@ -106,8 +100,6 @@ class Container implements ContainerInterface
 
     /**
      * Create a child container that falls back to the current container.
-     *
-     * @return static
      */
     public function scope(): static
     {
