@@ -2,10 +2,7 @@
 
 namespace Utopia\DI;
 
-use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
-use Utopia\DI\Exceptions\ContainerException;
-use Utopia\DI\Exceptions\NotFoundException;
 
 /**
  * @phpstan-consistent-constructor
@@ -13,20 +10,29 @@ use Utopia\DI\Exceptions\NotFoundException;
 class Container implements ContainerInterface
 {
     /**
-     * @var array<string, callable(ContainerInterface): mixed>
+     * Map of dependency IDs to their required dependency IDs.
+     *
+     * @var array<string, list<string>>
      */
-    private array $definitions = [];
+    private array $dependencies = [];
 
     /**
+     * Map of dependency IDs to their factory callables.
+     *
+     * @var array<string, callable>
+     */
+    private array $factories = [];
+
+    /**
+     * Map of dependency IDs to a cache of resolved instances.
+     *
      * @var array<string, mixed>
      */
-    private array $resolved = [];
+    private array $concrete = [];
 
     /**
-     * @var array<string, true>
+     * @param ContainerInterface|null $parent Optional parent container for hierarchical resolution.
      */
-    private array $resolving = [];
-
     public function __construct(
         private readonly ?ContainerInterface $parent = null,
     ) {
@@ -35,63 +41,42 @@ class Container implements ContainerInterface
     /**
      * Register a dependency factory on the current container.
      *
-     * @param  callable(ContainerInterface): mixed  $factory
+     * If a dependency with the same ID already exists, it will be overridden.
+     *
+     * @param string $id Unique identifier for the dependency.
+     * @param callable $factory Factory callable invoked to create the instance.
+     * @param list<string> $dependencies List of dependency IDs required by the factory.
      */
-    public function set(string $key, callable $factory): static
+    public function set(string $id, callable $factory, array $dependencies): static
     {
-        $this->definitions[$key] = $factory;
-        unset($this->resolved[$key]);
+        $this->factories[$id] = $factory;
+        $this->dependencies[$id] = $dependencies;
 
         return $this;
     }
 
-    /**
-     * Resolve an entry from the current container or its parent chain.
-     *
-     *
-     * @throws ContainerExceptionInterface
-     */
     public function get(string $id): mixed
     {
-        if (\array_key_exists($id, $this->resolved)) {
-            return $this->resolved[$id];
+        if (\array_key_exists($id, $this->concrete)) {
+            return $this->concrete[$id];
         }
 
-        if (\array_key_exists($id, $this->definitions)) {
-            if (isset($this->resolving[$id])) {
-                throw new ContainerException('Circular dependency detected for "'.$id.'".');
-            }
-
-            $this->resolving[$id] = true;
-
-            try {
-                $resolved = ($this->definitions[$id])($this);
-            } catch (NotFoundException|ContainerExceptionInterface $exception) {
-                throw $exception;
-            } catch (\Throwable $exception) {
-                throw new ContainerException(
-                    'Failed to resolve dependency "'.$id.'".',
-                    previous: $exception
-                );
-            } finally {
-                unset($this->resolving[$id]);
-            }
-
-            $this->resolved[$id] = $resolved;
-
-            return $resolved;
+        if (\array_key_exists($id, $this->factories)) {
+            $concrete = $this->build($id);
+            $this->concrete[$id] = $concrete;
+            return $concrete;
         }
 
         if ($this->parent instanceof ContainerInterface) {
             return $this->parent->get($id);
         }
 
-        throw new NotFoundException('Dependency not found: '.$id);
+        throw new Exceptions\NotFoundException("Dependency $id not found");
     }
 
     public function has(string $id): bool
     {
-        if (\array_key_exists($id, $this->definitions)) {
+        if (\array_key_exists($id, $this->factories)) {
             return true;
         }
 
@@ -99,10 +84,18 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Create a child container that falls back to the current container.
+     * Build a dependency by resolving its dependencies and invoking its factory.
+     *
+     * @param string $id Identifier of the dependency to build.
+     * @return mixed The constructed dependency instance.
      */
-    public function scope(): static
+    private function build(string $id): mixed
     {
-        return new static($this);
+        $dependencies = [];
+        foreach ($this->dependencies[$id] as $dependency) {
+            $dependencies[] = $this->get($dependency);
+        }
+
+        return \call_user_func($this->factories[$id], ...$dependencies);
     }
 }
