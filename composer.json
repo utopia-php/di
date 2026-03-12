@@ -1,6 +1,6 @@
 {
     "name": "utopia-php/di",
-    "description": "A simple and lite library for managing dependency injections",
+    "description": "Minimal PSR-11 dependency injection container with scoped child containers",
     "type": "library",
     "keywords": [
         "php",

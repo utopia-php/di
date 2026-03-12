@@ -32,6 +32,8 @@ composer install
 composer install -d tools/rector
 ```
 
+The repository root contains the package source, tests, and all primary project configuration files. There is no generated documentation site to update separately, so public behavior changes should be reflected directly in [README.md](README.md) and any affected inline examples.
+
 ## Branches And Commits
 
 Use a short, descriptive branch name. Examples:
@@ -65,6 +67,7 @@ Notes:
 - `composer analyze` runs PHPStan using [phpstan.neon](phpstan.neon).
 - `composer format:check` runs Pint in check mode.
 - `composer refactor:check` requires `tools/rector` dependencies to be installed first.
+- `composer fix` runs Rector, PHPStan, and Pint in sequence. It is useful before opening a pull request, but it does not replace targeted test coverage for behavior changes.
 
 ## Pull Requests
 
@@ -76,6 +79,7 @@ When opening a pull request:
 - Add or update tests for behavior changes.
 - Update documentation when public behavior or examples change.
 - Avoid mixing unrelated refactors with functional changes.
+- Keep examples aligned with the current API, especially `Container::scope()` behavior and `Dependency` usage.
 
 All changes should go through pull request review before merging.
 

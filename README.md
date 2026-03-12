@@ -1,14 +1,18 @@
-<p>
-    <img height="45" src="docs/logo.png" alt="Logo">
-</p>
-
 [![CI](https://github.com/utopia-php/di/actions/workflows/ci.yml/badge.svg)](https://github.com/utopia-php/di/actions/workflows/ci.yml)
 ![Total Downloads](https://img.shields.io/packagist/dt/utopia-php/di.svg)
 [![Discord](https://img.shields.io/discord/564160730845151244?label=discord)](https://discord.gg/GSeTUeA)
 
-Utopia DI is a small PSR-11 compatible dependency injection container with parent-child scopes. It is designed to stay simple while still covering the dependency lifecycle used across the Utopia libraries. This library is maintained by the [Appwrite team](https://appwrite.io).
+Utopia DI is a minimal [PSR-11](https://www.php-fig.org/psr/psr-11/) compatible dependency injection container with parent-child scopes. It is designed to stay small while covering the dependency lifecycle used across the Utopia libraries. This library is maintained by the [Appwrite team](https://appwrite.io).
 
-Although this library is part of the Utopia Framework project it is dependency free, and can be used as standalone with any other PHP project or framework.
+Although this library is part of the Utopia project, it is lightweight and works as a standalone package in any PHP codebase.
+
+## Features
+
+- PSR-11 compatible container interface
+- Lazy factory execution with per-container result caching
+- Child scopes that inherit parent definitions
+- Local overrides inside a child scope without mutating the parent
+- `Dependency` helper for name-based injection into callbacks
 
 ## Getting Started
 
@@ -46,9 +50,9 @@ $di->set(
 $john = $di->get('john');
 ```
 
-For `Dependency` factories, the `injections` array is matched to callback parameter names, so the array order does not need to mirror the callback signature.
+For `Dependency` factories, the `injections` array is matched to callback parameter names. The array order does not need to match the callback signature.
 
-You can still register plain factories directly when you want access to the container instance.
+You can also register plain factories directly when you want full access to the container instance.
 
 ```php
 $di->set(
@@ -72,7 +76,11 @@ $request->set(
 );
 ```
 
-Factories are resolved once per container instance. A child scope behaves in two distinct ways:
+## Resolution And Scopes
+
+Factories are resolved once per container instance. Resolved values, including `null`, are cached after the first successful lookup.
+
+A child scope behaves in two distinct ways:
 
 - If the child does not define a key, it falls back to the parent and reuses the parent's resolved value.
 - If the child defines the same key locally, it resolves and caches its own value without changing the parent.
@@ -102,27 +110,49 @@ $child->get('requestId'); // "request-2" (child now uses its own local definitio
 $di->get('requestId'); // "request-1" (parent is unchanged)
 ```
 
+## Error Behavior
+
+- `get()` throws `Utopia\DI\Exceptions\NotFoundException` when a dependency does not exist in the current container or any parent scope.
+- Factory failures are wrapped in `Utopia\DI\Exceptions\ContainerException`.
+- Circular dependency resolution also throws `Utopia\DI\Exceptions\ContainerException`.
+
 ## System Requirements
 
 Utopia DI requires PHP 8.2 or later. We recommend using the latest PHP version whenever possible.
 
+## Development
+
+Install dependencies and run the local checks:
+
+```bash
+composer install
+composer test
+composer analyze
+composer format:check
+composer refactor:check
+```
+
+`composer refactor:check` requires Rector dependencies from `tools/rector`:
+
+```bash
+composer install -d tools/rector
+```
+
 ## More from Utopia
 
-Our ecosystem supports other thin PHP projects aiming to extend the core PHP Utopia libraries.
+Our ecosystem contains small PHP packages focused on solving a single problem well.
 
-Each project is focused on solving a single, very simple problem and you can use composer to include any of them in your next project.
-
-You can find all libraries in [GitHub Utopia organization](https://github.com/utopia-php).
+You can browse the wider set of libraries in the [Utopia GitHub organization](https://github.com/utopia-php).
 
 ## Contributing
 
-All code contributions - including those of people having commit access - must go through a pull request and approved by a core developer before being merged. This is to ensure proper review of all the code.
+All code contributions, including those from maintainers, go through pull request review before merging.
 
-Fork the project, create a feature branch, and send us a pull request.
+Fork the project, create a feature branch from `main`, and open a pull request.
 
-You can refer to the [Contributing Guide](https://github.com/utopia-php/di/blob/master/CONTRIBUTING.md) for more info.
+See the [Contributing Guide](CONTRIBUTING.md) for the expected workflow and local checks.
 
-For security issues, please email security@appwrite.io instead of posting a public issue in GitHub.
+For security issues, email `security@appwrite.io` instead of opening a public issue.
 
 ## Copyright and license
 
