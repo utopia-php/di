@@ -46,6 +46,8 @@ $di->set(
 $john = $di->get('john');
 ```
 
+For `Dependency` factories, the `injections` array is matched to callback parameter names, so the array order does not need to mirror the callback signature.
+
 You can still register plain factories directly when you want access to the container instance.
 
 ```php

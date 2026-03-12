@@ -68,6 +68,37 @@ final class ContainerTest extends TestCase
         $this->assertSame('John Doe is 25 years old.', $container->get('john'));
     }
 
+    public function testDependencyOrderDoesNotNeedToMatchCallbackParameterOrder(): void
+    {
+        $container = new Container();
+
+        $container
+            ->set(
+                key: 'a',
+                factory: new Dependency(
+                    injections: [],
+                    callback: fn (): string => 'value-a'
+                )
+            )
+            ->set(
+                key: 'b',
+                factory: new Dependency(
+                    injections: [],
+                    callback: fn (): string => 'value-b'
+                )
+            )
+            ->set(
+                key: 'combined',
+                factory: new Dependency(
+                    injections: ['a', 'b'],
+                    callback: fn (string $b, string $a): string => "{$a}:{$b}"
+                )
+            )
+        ;
+
+        $this->assertSame('value-a:value-b', $container->get('combined'));
+    }
+
     public function testFactoriesAreResolvedOncePerContainer(): void
     {
         $counter = 0;

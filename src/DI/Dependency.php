@@ -24,7 +24,7 @@ class Dependency
         $arguments = [];
 
         foreach ($this->injections as $injection) {
-            $arguments[] = $container->get($injection);
+            $arguments[$injection] = $container->get($injection);
         }
 
         return ($this->callback)(...$arguments);
