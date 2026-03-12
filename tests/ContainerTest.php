@@ -156,7 +156,7 @@ final class ContainerTest extends TestCase
 
     public function testFactoryFailuresThrowContainerException(): void
     {
-        $this->container->set('broken', function (ContainerInterface $container): void {
+        $this->container->set('broken', function (ContainerInterface $container): never {
             throw new RuntimeException('boom');
         });
 

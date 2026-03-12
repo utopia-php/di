@@ -41,11 +41,11 @@ jobs:
           php-version: "8.3"
           coverage: none
 
-      - name: Validate composer.json and composer.lock
-        run: composer validate --strict
+      - name: Validate tools/rector/composer.json
+        run: composer validate --strict --working-dir=tools/rector
 
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress
+      - name: Install Rector dependencies
+        run: composer install --prefer-dist --no-progress --working-dir=tools/rector
 
       - name: Run Refactor Check
         run: composer refactor:check
@@ -78,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-versions: ["8.2", "8.3", "nightly"]
+        php-versions: ["8.2", "8.3", "8.4"]
 
     steps:
       - name: Checkout repository
