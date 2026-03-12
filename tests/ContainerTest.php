@@ -3,8 +3,11 @@
 namespace Utopia\DI\Tests;
 
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
+use RuntimeException;
 use Utopia\DI\Container;
-use Utopia\DI\Resource;
+use Utopia\DI\ContainerException;
+use Utopia\DI\NotFoundException;
 
 class ContainerTest extends TestCase
 {
@@ -14,22 +17,12 @@ class ContainerTest extends TestCase
     {
         $this->container = new Container();
 
-        $user = new Resource();
-        $user
-            ->setName('user')
-            ->inject('age')
-            ->setCallback(fn (int $age) => 'John Doe is '.$age.' years old.')
-        ;
-
-        $age = new Resource();
-        $age
-            ->setName('age')
-            ->setCallback(fn () => 25)
-        ;
-
         $this->container
-            ->set($user)
-            ->set($age)
+            ->set('age', fn (ContainerInterface $container) => 25)
+            ->set(
+                'user',
+                fn (ContainerInterface $container) => 'John Doe is '.$container->get('age').' years old.'
+            )
         ;
     }
 
@@ -38,123 +31,128 @@ class ContainerTest extends TestCase
         $this->container = null;
     }
 
+    public function testImplementsPsrContainerInterface(): void
+    {
+        $this->assertInstanceOf(ContainerInterface::class, $this->container);
+    }
+
     public function testResolution(): void
     {
         $this->assertSame('John Doe is 25 years old.', $this->container->get('user'));
     }
 
-    public function testCanResolveResourcesWithDependenciesAndPerContextCache(): void
+    public function testFactoriesAreResolvedOncePerContainer(): void
     {
         $counter = 0;
 
-        $this->container
-            ->setResource('counter', function () use (&$counter) {
-                $counter++;
-
-                return $counter;
-            })
-            ->setResource('message', fn (int $counter) => "counter-{$counter}", ['counter'])
-        ;
-
-        $this->assertSame(1, $this->container->getResource('counter', 'request-1'));
-        $this->assertSame(1, $this->container->getResource('counter', 'request-1'));
-        $this->assertSame('counter-1', $this->container->getResource('message', 'request-1'));
-
-        $this->assertSame(2, $this->container->getResource('counter', 'request-2'));
-        $this->assertSame('counter-2', $this->container->getResource('message', 'request-2'));
-    }
-
-    public function testDependencyArrayOrderDoesNotNeedToMatchCallbackParameterOrder(): void
-    {
-        $container = new Container();
-
-        $container
-            ->setResource('a', fn () => 'value-a')
-            ->setResource('b', fn () => 'value-b')
-            ->setResource('combined', fn (string $b, string $a): string => "{$a}:{$b}", ['a', 'b'])
-        ;
-
-        $this->assertSame('value-a:value-b', $container->get('combined'));
-    }
-
-    public function testContextSpecificDefinitionsOverrideDefaultContext(): void
-    {
-        $this->container
-            ->setResource('greeting', fn () => 'hello from default')
-            ->setResource('greeting', fn () => 'hello from request-1', context: 'request-1')
-        ;
-
-        $this->assertSame('hello from request-1', $this->container->getResource('greeting', 'request-1'));
-        $this->assertSame('hello from default', $this->container->getResource('greeting', 'request-2'));
-    }
-
-    public function testCanResolveResourceListsAndContainerReference(): void
-    {
-        $this->container
-            ->setResource('name', fn () => 'utopia')
-            ->setResource(
-                'summary',
-                fn (string $name, Container $di) => "{$name}-".($di === $this->container ? 'same' : 'different'),
-                ['name', 'di']
-            )
-        ;
-
-        $resources = $this->container->getResources(['name', 'summary'], 'request-1');
-
-        $this->assertSame('utopia', $resources['name']);
-        $this->assertSame('utopia-same', $resources['summary']);
-    }
-
-    public function testGetResourcesCanBypassCacheWithFreshFlag(): void
-    {
-        $counter = 0;
-
-        $this->container->setResource('counter', function () use (&$counter) {
+        $this->container->set('counter', function (ContainerInterface $container) use (&$counter) {
             $counter++;
 
             return $counter;
         });
 
-        $this->assertSame(['counter' => 1], $this->container->getResources(['counter']));
-        $this->assertSame(['counter' => 2], $this->container->getResources(['counter'], fresh: true));
+        $this->assertSame(1, $this->container->get('counter'));
+        $this->assertSame(1, $this->container->get('counter'));
     }
 
-    public function testCanRefreshAndPurgeContexts(): void
+    public function testScopedContainersFallbackToParentDefinitions(): void
+    {
+        $request = $this->container->scope();
+
+        $this->assertSame('John Doe is 25 years old.', $request->get('user'));
+        $this->assertTrue($request->has('user'));
+    }
+
+    public function testScopedContainersCanOverrideParentDefinitions(): void
+    {
+        $request = $this->container->scope();
+
+        $request
+            ->set('age', fn (ContainerInterface $container) => 30)
+            ->set(
+                'user',
+                fn (ContainerInterface $container) => 'John Doe is '.$container->get('age').' years old.'
+            )
+        ;
+
+        $this->assertSame('John Doe is 30 years old.', $request->get('user'));
+        $this->assertSame('John Doe is 25 years old.', $this->container->get('user'));
+    }
+
+    public function testScopeUsesParentCacheUntilDefinitionsAreOverridden(): void
     {
         $counter = 0;
 
-        $this->container
-            ->setResource('counter', function () use (&$counter) {
-                $counter++;
+        $this->container->set('counter', function (ContainerInterface $container) use (&$counter) {
+            $counter++;
 
-                return $counter;
-            })
-            ->setResource('request-id', fn () => 'request-1', context: 'request-1')
-        ;
+            return $counter;
+        });
 
-        $this->assertSame(1, $this->container->getResource('counter', 'request-1'));
+        $request = $this->container->scope();
 
-        $this->container->refresh('counter', 'request-1');
+        $this->assertSame(1, $this->container->get('counter'));
+        $this->assertSame(1, $request->get('counter'));
 
-        $this->assertSame(2, $this->container->getResource('counter', 'request-1'));
-        $this->assertTrue($this->container->has('request-id', 'request-1'));
+        $request->set('counter', function (ContainerInterface $container) use (&$counter) {
+            $counter++;
 
-        $this->container->purge('request-1');
+            return $counter;
+        });
 
-        $this->assertFalse($this->container->has('request-id', 'request-1'));
-        $this->assertSame(3, $this->container->getResource('counter', 'request-1'));
+        $this->assertSame(2, $request->get('counter'));
+        $this->assertSame(2, $request->get('counter'));
     }
 
-    public function testUpdatingDefaultContextInvalidatesCachedInstancesAcrossContexts(): void
+    public function testCanCacheNullValues(): void
     {
-        $this->container->setResource('config', fn () => 'v1');
+        $counter = 0;
 
-        $this->assertSame('v1', $this->container->getResource('config', 'request-1'));
-        $this->assertSame('v1', $this->container->getResource('config', 'request-2'));
+        $this->container->set('nullable', function (ContainerInterface $container) use (&$counter) {
+            $counter++;
 
-        $this->container->setResource('config', fn () => 'v2');
+            return null;
+        });
 
-        $this->assertSame('v2', $this->container->getResource('config', 'request-1'));
-        $this->assertSame('v2', $this->container->getResource('config', 'request-2'));
+        $this->assertNull($this->container->get('nullable'));
+        $this->assertNull($this->container->get('nullable'));
+        $this->assertSame(1, $counter);
+    }
+
+    public function testMissingDependencyThrowsNotFoundException(): void
+    {
+        $this->expectException(NotFoundException::class);
+        $this->expectExceptionMessage('Dependency not found: missing');
+
+        $this->container->get('missing');
+    }
+
+    public function testFactoryFailuresThrowContainerException(): void
+    {
+        $this->container->set('broken', function (ContainerInterface $container) {
+            throw new RuntimeException('boom');
+        });
+
+        try {
+            $this->container->get('broken');
+            $this->fail('Expected a container exception.');
+        } catch (ContainerException $exception) {
+            $this->assertSame('Failed to resolve dependency "broken".', $exception->getMessage());
+            $this->assertInstanceOf(RuntimeException::class, $exception->getPrevious());
+            $this->assertSame('boom', $exception->getPrevious()->getMessage());
+        }
+    }
+
+    public function testCircularDependenciesThrowContainerException(): void
+    {
+        $this->container
+            ->set('a', fn (ContainerInterface $container) => $container->get('b'))
+            ->set('b', fn (ContainerInterface $container) => $container->get('a'))
+        ;
+
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage('Circular dependency detected for "a".');
+
+        $this->container->get('a');
     }
 }

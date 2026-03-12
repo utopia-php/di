@@ -2,11 +2,11 @@
     <img height="45" src="docs/logo.png" alt="Logo">
 </p>
 
-[![Build Status](https://travis-ci.org/utopia-php/http.svg?branch=master)](https://travis-ci.org/utopia-php/http)
-![Total Downloads](https://img.shields.io/packagist/dt/utopia-php/http.svg)
+[![CI](https://github.com/utopia-php/di/actions/workflows/ci.yml/badge.svg)](https://github.com/utopia-php/di/actions/workflows/ci.yml)
+![Total Downloads](https://img.shields.io/packagist/dt/utopia-php/di.svg)
 [![Discord](https://img.shields.io/discord/564160730845151244?label=discord)](https://discord.gg/GSeTUeA)
 
-Utopia DI is a small dependency injection container with scoped resources. It is designed to stay simple while still covering the resource lifecycle used across the Utopia libraries. This library is maintained by the [Appwrite team](https://appwrite.io).
+Utopia DI is a small PSR-11 compatible dependency injection container with parent-child scopes. It is designed to stay simple while still covering the dependency lifecycle used across the Utopia libraries. This library is maintained by the [Appwrite team](https://appwrite.io).
 
 Although this library is part of the Utopia Framework project it is dependency free, and can be used as standalone with any other PHP project or framework.
 
@@ -21,32 +21,37 @@ composer require utopia-php/di
 ```php
 require_once __DIR__.'/../vendor/autoload.php';
 
+use Psr\Container\ContainerInterface;
 use Utopia\DI\Container;
 
 $di = new Container();
 
-$di->setResource('config', fn () => [
+$di->set('config', fn (ContainerInterface $container) => [
     'dsn' => 'mysql:host=localhost;dbname=app',
     'username' => 'root',
     'password' => 'secret',
 ]);
-$di->setResource(
+$di->set(
     'db',
-    fn (array $config) => new PDO($config['dsn'], $config['username'], $config['password']),
-    ['config']
+    fn (ContainerInterface $container) => new PDO(
+        $container->get('config')['dsn'],
+        $container->get('config')['username'],
+        $container->get('config')['password']
+    )
 );
 
-$db = $di->getResource('db', 'request-1');
+$db = $di->get('db');
 ```
 
-Resources are cached per context. Definitions registered in the default `utopia` context are automatically available in other contexts, while context-specific definitions override the default for that request.
+Factories are resolved once per container instance. Child scopes fall back to the parent container until they override a definition locally.
 
 ```php
-$di->setResource('request-id', fn () => 'req-1', context: 'request-1');
+$request = $di->scope();
 
-$requestResources = $di->getResources(['db', 'request-id'], 'request-1');
+$request->set('request-id', fn (ContainerInterface $container) => 'req-1');
 
-$di->purge('request-1');
+$request->get('db');
+$request->get('request-id');
 ```
 
 ## System Requirements

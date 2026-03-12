@@ -2,246 +2,113 @@
 
 namespace Utopia\DI;
 
-use Exception;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\ContainerInterface;
 
-class Container
+/**
+ * @phpstan-consistent-constructor
+ */
+class Container implements ContainerInterface
 {
-    public const DEFAULT_CONTEXT = 'utopia';
-
     /**
-     * @var array<string, array<string, Resource>>
+     * @var array<string, callable(ContainerInterface): mixed>
      */
-    protected array $dependencies = [];
+    private array $definitions = [];
 
     /**
-     * @var array<string, array<string, mixed>>
+     * @var array<string, mixed>
      */
-    protected array $instances = [];
+    private array $resolved = [];
 
     /**
-     * Set a dependency.
+     * @var array<string, true>
+     */
+    private array $resolving = [];
+
+    public function __construct(
+        private ?ContainerInterface $parent = null,
+    ) {
+    }
+
+    /**
+     * Register a dependency factory on the current container.
      *
-     * @param  Resource  $dependency
-     * @param  string  $context
-     * @return self
-     *
-     * @throws Exception
+     * @param  string  $id
+     * @param  callable(ContainerInterface): mixed  $factory
+     * @return static
      */
-    public function set(Resource $dependency, string $context = self::DEFAULT_CONTEXT): self
+    public function set(string $id, callable $factory): static
     {
-        if ($dependency->getName() === 'di') {
-            throw new Exception("'di' is a reserved keyword.");
-        }
-
-        $this->dependencies[$context] ??= [];
-        $this->instances[$context] ??= [];
-
-        if ($context === self::DEFAULT_CONTEXT) {
-            $this->refresh($dependency->getName());
-        } else {
-            unset($this->instances[$context][$dependency->getName()]);
-        }
-
-        $this->dependencies[$context][$dependency->getName()] = $dependency;
+        $this->definitions[$id] = $factory;
+        unset($this->resolved[$id]);
 
         return $this;
     }
 
     /**
-     * Register a callable resource.
+     * Resolve an entry from the current container or its parent chain.
      *
-     * @param  string  $name
-     * @param  callable  $callback
-     * @param  string[]  $dependencies
-     * @param  string  $context
-     * @return self
-     */
-    public function setResource(string $name, callable $callback, array $dependencies = [], string $context = self::DEFAULT_CONTEXT): self
-    {
-        $resource = new Resource();
-        $resource
-            ->setName($name)
-            ->setCallback($callback)
-        ;
-
-        foreach ($dependencies as $dependency) {
-            $resource->inject($dependency);
-        }
-
-        return $this->set($resource, $context);
-    }
-
-    /**
-     * Get a resource.
-     *
-     * @param  string  $name
-     * @param  string  $context
-     * @param  bool  $fresh
+     * @param  string  $id
      * @return mixed
      *
-     * @throws Exception
+     * @throws ContainerExceptionInterface
      */
-    public function get(string $name, string $context = self::DEFAULT_CONTEXT, bool $fresh = false): mixed
+    public function get(string $id): mixed
     {
-        if ($name === 'di') {
-            return $this;
+        if (\array_key_exists($id, $this->resolved)) {
+            return $this->resolved[$id];
         }
 
-        $injection = $this->getDefinition($name, $context);
+        if (\array_key_exists($id, $this->definitions)) {
+            if (isset($this->resolving[$id])) {
+                throw new ContainerException('Circular dependency detected for "'.$id.'".');
+            }
 
-        return $this->inject($injection, $context, $fresh);
-    }
+            $this->resolving[$id] = true;
 
-    /**
-     * Alias for get().
-     *
-     * @param  string  $name
-     * @param  string  $context
-     * @param  bool  $fresh
-     * @return mixed
-     *
-     * @throws Exception
-     */
-    public function getResource(string $name, string $context = self::DEFAULT_CONTEXT, bool $fresh = false): mixed
-    {
-        return $this->get($name, $context, $fresh);
-    }
+            try {
+                $resolved = ($this->definitions[$id])($this);
+            } catch (NotFoundException $exception) {
+                throw $exception;
+            } catch (ContainerExceptionInterface $exception) {
+                throw $exception;
+            } catch (\Throwable $exception) {
+                throw new ContainerException(
+                    'Failed to resolve dependency "'.$id.'".',
+                    previous: $exception
+                );
+            } finally {
+                unset($this->resolving[$id]);
+            }
 
-    /**
-     * Resolve multiple dependencies for a context.
-     *
-     * @param  string[]  $names
-     * @param  string  $context
-     * @param  bool  $fresh
-     * @return array<string, mixed>
-     *
-     * @throws Exception
-     */
-    public function getResources(array $names, string $context = self::DEFAULT_CONTEXT, bool $fresh = false): array
-    {
-        $resources = [];
+            $this->resolved[$id] = $resolved;
 
-        foreach ($names as $name) {
-            $resources[$name] = $this->get($name, $context, $fresh);
+            return $resolved;
         }
 
-        return $resources;
+        if ($this->parent instanceof ContainerInterface) {
+            return $this->parent->get($id);
+        }
+
+        throw new NotFoundException('Dependency not found: '.$id);
     }
 
-    /**
-     * Check if a resource exists in the current or default context.
-     *
-     * @param  string  $name
-     * @param  string  $context
-     * @return bool
-     */
-    public function has(string $name, string $context = self::DEFAULT_CONTEXT): bool
+    public function has(string $id): bool
     {
-        if ($name === 'di') {
+        if (\array_key_exists($id, $this->definitions)) {
             return true;
         }
 
-        return isset($this->dependencies[$context][$name]) || isset($this->dependencies[self::DEFAULT_CONTEXT][$name]);
+        return $this->parent?->has($id) ?? false;
     }
 
     /**
-     * Resolve the dependencies of a given resource.
+     * Create a child container that falls back to the current container.
      *
-     * @param  Resource  $injection
-     * @param  string  $context
-     * @param  bool  $fresh
-     * @return mixed
-     *
-     * @throws Exception
+     * @return static
      */
-    public function inject(Resource $injection, string $context = self::DEFAULT_CONTEXT, bool $fresh = false): mixed
+    public function scope(): static
     {
-        $this->instances[$context] ??= [];
-
-        if (\array_key_exists($injection->getName(), $this->instances[$context]) && !$fresh) {
-            return $this->instances[$context][$injection->getName()];
-        }
-
-        $arguments = [];
-
-        foreach ($injection->getDependencies() as $dependency) {
-            $arguments[$dependency] = $this->get($dependency, $context);
-        }
-
-        $resolved = ($injection->getCallback())(...$arguments);
-        $this->instances[$context][$injection->getName()] = $resolved;
-
-        return $resolved;
-    }
-
-    /**
-     * Refresh a dependency instance.
-     *
-     * @param  string  $name
-     * @param  string|null  $context
-     * @return self
-     */
-    public function refresh(string $name, ?string $context = null): self
-    {
-        if ($name === 'di') {
-            return $this;
-        }
-
-        if ($context !== null) {
-            unset($this->instances[$context][$name]);
-
-            return $this;
-        }
-
-        foreach (\array_keys($this->instances) as $instanceContext) {
-            unset($this->instances[$instanceContext][$name]);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Purge resources for a context.
-     *
-     * Container::purge clears cached instances from $this->instances. For
-     * self::DEFAULT_CONTEXT it preserves registrations in $this->dependencies
-     * and only resets $this->instances[self::DEFAULT_CONTEXT]. For any other
-     * context it removes both $this->dependencies[$context] and
-     * $this->instances[$context].
-     *
-     * @param  string  $context
-     * @return self
-     */
-    public function purge(string $context): self
-    {
-        if ($context === self::DEFAULT_CONTEXT) {
-            $this->instances[$context] = [];
-
-            return $this;
-        }
-
-        unset($this->dependencies[$context], $this->instances[$context]);
-
-        return $this;
-    }
-
-    /**
-     * @param  string  $name
-     * @param  string  $context
-     * @return Resource
-     *
-     * @throws Exception
-     */
-    protected function getDefinition(string $name, string $context): Resource
-    {
-        if (isset($this->dependencies[$context][$name])) {
-            return $this->dependencies[$context][$name];
-        }
-
-        if (isset($this->dependencies[self::DEFAULT_CONTEXT][$name])) {
-            return $this->dependencies[self::DEFAULT_CONTEXT][$name];
-        }
-
-        throw new Exception('Failed to find dependency: "' . $name . '"');
+        return new static($this);
     }
 }
