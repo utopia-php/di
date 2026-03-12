@@ -1,9 +1,9 @@
 <?php
 
-namespace Utopia\DI;
+namespace Utopia\DI\Exceptions;
 
-use RuntimeException;
 use Psr\Container\NotFoundExceptionInterface;
+use RuntimeException;
 
 class NotFoundException extends RuntimeException implements NotFoundExceptionInterface
 {

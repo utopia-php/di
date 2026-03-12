@@ -6,8 +6,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
 use Utopia\DI\Container;
-use Utopia\DI\ContainerException;
-use Utopia\DI\NotFoundException;
+use Utopia\DI\Dependency;
+use Utopia\DI\Exceptions\ContainerException;
+use Utopia\DI\Exceptions\NotFoundException;
 
 class ContainerTest extends TestCase
 {
@@ -39,6 +40,30 @@ class ContainerTest extends TestCase
     public function testResolution(): void
     {
         $this->assertSame('John Doe is 25 years old.', $this->container->get('user'));
+    }
+
+    public function testCanRegisterDependencyObjects(): void
+    {
+        $container = new Container();
+
+        $container
+            ->set(
+                key: 'age',
+                factory: new Dependency(
+                    injections: [],
+                    callback: fn () => 25
+                )
+            )
+            ->set(
+                key: 'john',
+                factory: new Dependency(
+                    injections: ['age'],
+                    callback: fn (int $age) => 'John Doe is '.$age.' years old.'
+                )
+            )
+        ;
+
+        $this->assertSame('John Doe is 25 years old.', $container->get('john'));
     }
 
     public function testFactoriesAreResolvedOncePerContainer(): void

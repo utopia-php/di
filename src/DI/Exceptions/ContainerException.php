@@ -1,9 +1,9 @@
 <?php
 
-namespace Utopia\DI;
+namespace Utopia\DI\Exceptions;
 
-use RuntimeException;
 use Psr\Container\ContainerExceptionInterface;
+use RuntimeException;
 
 class ContainerException extends RuntimeException implements ContainerExceptionInterface
 {

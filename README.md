@@ -23,35 +23,58 @@ require_once __DIR__.'/../vendor/autoload.php';
 
 use Psr\Container\ContainerInterface;
 use Utopia\DI\Container;
+use Utopia\DI\Dependency;
 
 $di = new Container();
 
-$di->set('config', fn (ContainerInterface $container) => [
-    'dsn' => 'mysql:host=localhost;dbname=app',
-    'username' => 'root',
-    'password' => 'secret',
-]);
 $di->set(
-    'db',
-    fn (ContainerInterface $container) => new PDO(
+    key: 'age',
+    factory: new Dependency(
+        injections: [],
+        callback: fn () => 25
+    )
+);
+
+$di->set(
+    key: 'john',
+    factory: new Dependency(
+        injections: ['age'],
+        callback: fn (int $age) => 'John Doe is '.$age.' years old.'
+    )
+);
+
+$john = $di->get('john');
+```
+
+You can still register plain factories directly when you want access to the container instance.
+
+```php
+$di->set(
+    key: 'config',
+    factory: fn (ContainerInterface $container) => [
+        'dsn' => 'mysql:host=localhost;dbname=app',
+        'username' => 'root',
+        'password' => 'secret',
+    ]
+);
+
+$request = $di->scope();
+
+$request->set(
+    key: 'db',
+    factory: fn (ContainerInterface $container) => new PDO(
         $container->get('config')['dsn'],
         $container->get('config')['username'],
         $container->get('config')['password']
     )
 );
-
-$db = $di->get('db');
 ```
 
 Factories are resolved once per container instance. Child scopes fall back to the parent container until they override a definition locally.
 
 ```php
-$request = $di->scope();
-
-$request->set('request-id', fn (ContainerInterface $container) => 'req-1');
-
-$request->get('db');
-$request->get('request-id');
+$child = $di->scope();
+$child->get('john');
 ```
 
 ## System Requirements

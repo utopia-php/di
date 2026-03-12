@@ -4,6 +4,8 @@ namespace Utopia\DI;
 
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
+use Utopia\DI\Exceptions\ContainerException;
+use Utopia\DI\Exceptions\NotFoundException;
 
 /**
  * @phpstan-consistent-constructor
@@ -33,14 +35,14 @@ class Container implements ContainerInterface
     /**
      * Register a dependency factory on the current container.
      *
-     * @param  string  $id
+     * @param  string  $key
      * @param  callable(ContainerInterface): mixed  $factory
      * @return static
      */
-    public function set(string $id, callable $factory): static
+    public function set(string $key, callable $factory): static
     {
-        $this->definitions[$id] = $factory;
-        unset($this->resolved[$id]);
+        $this->definitions[$key] = $factory;
+        unset($this->resolved[$key]);
 
         return $this;
     }
