@@ -2,131 +2,107 @@
 
 namespace Utopia\DI;
 
-use Exception;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\ContainerInterface;
+use Utopia\DI\Exceptions\ContainerException;
+use Utopia\DI\Exceptions\NotFoundException;
 
-class Container
+/**
+ * @phpstan-consistent-constructor
+ */
+class Container implements ContainerInterface
 {
     /**
-     * @var array
+     * @var array<string, callable(ContainerInterface): mixed>
      */
-    protected array $dependencies = [];
+    private array $definitions = [];
 
     /**
-     * @var array
+     * @var array<string, mixed>
      */
-    protected array $instances = [];
+    private array $resolved = [];
 
-    public function __construct()
-    {
-        $di = new Dependency();
-        $di->setName('di');
-        $di->setCallback(function () {
-            return $this;
-        });
-        $this->dependencies[$di->getName()] = $di;
+    /**
+     * @var array<string, true>
+     */
+    private array $resolving = [];
+
+    public function __construct(
+        private readonly ?ContainerInterface $parent = null,
+    ) {
     }
 
     /**
-     * Set a dependency.
+     * Register a dependency factory on the current container.
      *
-     * @param  Dependency|Injection  $dependency
-     * @return self
-     *
-     * @throws Exception
+     * @param  callable(ContainerInterface): mixed  $factory
      */
-    public function set(Dependency|Injection $dependency): self
+    public function set(string $key, callable $factory): static
     {
-        if ($dependency->getName() === 'di') {
-            throw new Exception("'di' is a reserved keyword.");
-        }
-
-        if (\array_key_exists($dependency->getName(), $this->instances)) {
-            unset($this->instances[$dependency->getName()]);
-        }
-
-        $this->dependencies[$dependency->getName()] = $dependency;
+        $this->definitions[$key] = $factory;
+        unset($this->resolved[$key]);
 
         return $this;
     }
 
     /**
-     * Get a dependency.
+     * Resolve an entry from the current container or its parent chain.
      *
-     * @param  string  $name
      *
-     * @return mixed
+     * @throws ContainerExceptionInterface
      */
-    public function get(string $name): mixed
+    public function get(string $id): mixed
     {
-        if (!\array_key_exists($name, $this->dependencies)) {
-            throw new Exception('Failed to find dependency: "' . $name . '"');
+        if (\array_key_exists($id, $this->resolved)) {
+            return $this->resolved[$id];
         }
 
-        return $this->inject($this->dependencies[$name]);
-    }
-
-    /**
-     * Check if a dependency exists.
-     *
-     * @param  string  $name
-     *
-     * @return bool
-     */
-    public function has(string $name): bool
-    {
-        return \array_key_exists($name, $this->dependencies);
-    }
-
-    /**
-     * Resolve the dependencies of a given injection.
-     *
-     * @param  Injection  $injection
-     * @param  bool  $fresh
-     *
-     * @return mixed
-     */
-    public function inject(Injection $injection, bool $fresh = false): mixed // Route
-    {
-        if (\array_key_exists($injection->getName(), $this->instances) && !$fresh) {
-            return $this->instances[$injection->getName()];
-        }
-
-        $arguments = [];
-
-        foreach ($injection->getDependencies() as $dependency) {
-
-            if (\array_key_exists($dependency, $this->instances)) {
-                $arguments[] = $this->instances[$dependency];
-                continue;
+        if (\array_key_exists($id, $this->definitions)) {
+            if (isset($this->resolving[$id])) {
+                throw new ContainerException('Circular dependency detected for "'.$id.'".');
             }
 
-            if (!\array_key_exists($dependency, $this->dependencies)) {
-                throw new Exception('Failed to find dependency: "' . $dependency . '"');
+            $this->resolving[$id] = true;
+
+            try {
+                $resolved = ($this->definitions[$id])($this);
+            } catch (NotFoundException|ContainerExceptionInterface $exception) {
+                throw $exception;
+            } catch (\Throwable $exception) {
+                throw new ContainerException(
+                    'Failed to resolve dependency "'.$id.'".',
+                    previous: $exception
+                );
+            } finally {
+                unset($this->resolving[$id]);
             }
 
-            $arguments[] = $this->get($dependency);
+            $this->resolved[$id] = $resolved;
 
+            return $resolved;
         }
 
-        $resolved = \call_user_func_array($injection->getCallback(), $arguments);
+        if ($this->parent instanceof ContainerInterface) {
+            return $this->parent->get($id);
+        }
 
-        $this->instances[$injection->getName()] = $resolved;
-
-        return $resolved;
+        throw new NotFoundException('Dependency not found: '.$id);
     }
-    /**
-     * Refresh a dependency
-     *
-     * @param string $name
-     * @return self
-     * @throws Exception
-     */
-    public function refresh(string $name): self
+
+    public function has(string $id): bool
     {
-        if(\array_key_exists($name, $this->instances)) {
-            unset($this->instances[$name]);
+        if (\array_key_exists($id, $this->definitions)) {
+            return true;
         }
 
-        return $this;
+        return $this->parent?->has($id) ?? false;
+    }
+
+    /**
+     * Create a child container that falls back to the current container.
+     */
+    public function scope(): static
+    {
+        return new static($this);
     }
 }
