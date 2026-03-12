@@ -70,11 +70,34 @@ $request->set(
 );
 ```
 
-Factories are resolved once per container instance. Child scopes fall back to the parent container until they override a definition locally.
+Factories are resolved once per container instance. A child scope behaves in two distinct ways:
+
+- If the child does not define a key, it falls back to the parent and reuses the parent's resolved value.
+- If the child defines the same key locally, it resolves and caches its own value without changing the parent.
 
 ```php
+$counter = 0;
+
+$di->set('requestId', function () use (&$counter): string {
+    $counter++;
+
+    return 'request-'.$counter;
+});
+
+$di->get('requestId'); // "request-1"
+
 $child = $di->scope();
-$child->get('john');
+
+$child->get('requestId'); // "request-1" (falls back to the parent cache)
+
+$child->set('requestId', function () use (&$counter): string {
+    $counter++;
+
+    return 'request-'.$counter;
+});
+
+$child->get('requestId'); // "request-2" (child now uses its own local definition)
+$di->get('requestId'); // "request-1" (parent is unchanged)
 ```
 
 ## System Requirements
