@@ -18,6 +18,14 @@ final class ContainerTest extends TestCase
         $this->assertSame('bar', $container->get('foo'));
     }
 
+    public function testSetDefaultsDependenciesToEmptyArray(): void
+    {
+        $container = new Container();
+        $container->set('foo', fn (): string => 'bar');
+
+        $this->assertSame('bar', $container->get('foo'));
+    }
+
     public function testSetReturnsContainer(): void
     {
         $container = new Container();
