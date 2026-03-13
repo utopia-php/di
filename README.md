@@ -21,58 +21,44 @@ composer require utopia-php/di
 ```php
 require_once __DIR__.'/../vendor/autoload.php';
 
-use Psr\Container\ContainerInterface;
 use Utopia\DI\Container;
-use Utopia\DI\Dependency;
 
 $di = new Container();
 
-$di->set(
-    key: 'age',
-    factory: new Dependency(
-        injections: [],
-        callback: fn () => 25
-    )
-);
+$di->set('age', fn (): int => 25);
 
 $di->set(
-    key: 'john',
-    factory: new Dependency(
-        injections: ['age'],
-        callback: fn (int $age) => 'John Doe is '.$age.' years old.'
-    )
+    'john',
+    fn (int $age): string => 'John Doe is '.$age.' years old.',
+    ['age']
 );
 
 $john = $di->get('john');
 ```
 
-For `Dependency` factories, the `injections` array is matched to callback parameter names, so the array order does not need to mirror the callback signature.
+Dependencies are resolved from the third `set()` argument and passed to the factory in that same order.
 
-You can still register plain factories directly when you want access to the container instance.
+Register factories directly and list the dependency IDs they need.
 
 ```php
+$di->set('config', fn (): array => [
+    'dsn' => 'mysql:host=localhost;dbname=app',
+    'username' => 'root',
+    'password' => 'secret',
+]);
+
 $di->set(
-    key: 'config',
-    factory: fn (ContainerInterface $container) => [
-        'dsn' => 'mysql:host=localhost;dbname=app',
-        'username' => 'root',
-        'password' => 'secret',
-    ]
-);
-
-$request = $di->scope();
-
-$request->set(
-    key: 'db',
-    factory: fn (ContainerInterface $container) => new PDO(
-        $container->get('config')['dsn'],
-        $container->get('config')['username'],
-        $container->get('config')['password']
-    )
+    'db',
+    fn (array $config): PDO => new PDO(
+        $config['dsn'],
+        $config['username'],
+        $config['password']
+    ),
+    ['config']
 );
 ```
 
-Factories are resolved once per container instance. A child scope behaves in two distinct ways:
+Factories are resolved once per container instance. A child container behaves in two distinct ways:
 
 - If the child does not define a key, it falls back to the parent and reuses the parent's resolved value.
 - If the child defines the same key locally, it resolves and caches its own value without changing the parent.
@@ -88,7 +74,7 @@ $di->set('requestId', function () use (&$counter): string {
 
 $di->get('requestId'); // "request-1"
 
-$child = $di->scope();
+$child = new Container($di);
 
 $child->get('requestId'); // "request-1" (falls back to the parent cache)
 

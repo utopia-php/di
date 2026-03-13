@@ -47,7 +47,7 @@ class Container implements ContainerInterface
      * @param callable $factory Factory callable invoked to create the instance.
      * @param list<string> $dependencies List of dependency IDs required by the factory.
      */
-    public function set(string $id, callable $factory, array $dependencies): static
+    public function set(string $id, callable $factory, array $dependencies = []): static
     {
         $this->factories[$id] = $factory;
         $this->dependencies[$id] = $dependencies;
