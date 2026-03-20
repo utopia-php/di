@@ -51,6 +51,7 @@ class Container implements ContainerInterface
     {
         $this->factories[$id] = $factory;
         $this->dependencies[$id] = $dependencies;
+        unset($this->concrete[$id]);
 
         return $this;
     }
