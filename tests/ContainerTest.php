@@ -130,6 +130,16 @@ final class ContainerTest extends TestCase
         $this->assertSame('second', $container->get('foo'));
     }
 
+    public function testSetOverridesCachedInstance(): void
+    {
+        $container = new Container();
+        $container->set('foo', fn (): string => 'first', []);
+        $this->assertSame('first', $container->get('foo'));
+
+        $container->set('foo', fn (): string => 'second', []);
+        $this->assertSame('second', $container->get('foo'));
+    }
+
     public function testFactoryCanReturnNull(): void
     {
         $container = new Container();
